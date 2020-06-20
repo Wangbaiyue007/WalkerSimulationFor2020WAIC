@@ -1,5 +1,0 @@
-uint32 dev_name
-uint32 on_off
----
-uint32 result
-

@@ -1,7 +1,0 @@
-uint32 reserved
----
-uint32 result
-float32 dis_x
-float32 dis_y
-float32 dis_z
-
