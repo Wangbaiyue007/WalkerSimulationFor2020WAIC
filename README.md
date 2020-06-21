@@ -1,4 +1,32 @@
-赛事概述 
+# 妮可机器康复队
+
+## Instruction
+
+### I. Set Up
+
+1. 编辑在主文件夹下的隐藏文件.*bashrc*，在最后加上：
+
+    source $(walker_install)/walker_install/setup.bash  
+    source $(ubt_sim_ws)/ubt_sim_ws/devel/setup.bash  
+    export ROS_PACKAGE_PATH=$(ubt_sim_ws)/ubt_sim_ws/src:$ROS_PACKAGE_PATH
+2. cd to */ubt_sim_ws*, and try run *catkin_make*
+3. If not successful, check *CMakeLists.txt*
+
+### II. Launch Example
+
+Open webots
+
+    $ webots
+Open world file *walker_model/world/WAIC.wbt*
+
+Launch the json file that contains the key, and the robot will bend his knee:
+
+    $ roslaunch leg_motion walker2_leg.launch account_file:=${walker_WAIC}/walker_WAIC/user_account.json
+Launch example:
+
+    $ roslaunch example example.launch
+
+## 赛事概述
 
 WAIC黑客马拉松作为世界人工智能大会期间的重磅赛事和特色环节，将于2020年7月8日-11日在线上举办。ROBO GENIUS是优必选科技重磅打造的机器人及AI教育创新成长平台，聚集各领域专家、老师、学生及生态伙伴，提供贯穿K12到高校的各类人工智能及机器人赛事。优必选科技ROBO GENIUS作为本次大赛的联合承办方，与机器之心联合举办了走进未来·Walker大型仿人服务机器人仿真挑战赛（以下简称“Walker仿真挑战赛”）。  
   
