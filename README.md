@@ -2,7 +2,7 @@
 
 ## Instruction
 
-### I. Set Up
+### Set Up
 
 1. 编辑在主文件夹下的隐藏文件.*bashrc*，在最后加上：
 
@@ -12,7 +12,7 @@
 2. cd to */ubt_sim_ws*, and try run *catkin_make*
 3. If not successful, check *CMakeLists.txt*
 
-### II. Launch Example
+### Launch Example
 
 Open webots
 
@@ -25,6 +25,12 @@ Launch the json file that contains the key, and the robot will bend his knee:
 Launch example:
 
     $ roslaunch example example.launch
+
+### Mission 1
+
+Before launching the program, change the **ModelPath** in *switch_light_node.cpp* to your urdf path.
+
+    $ roslaunch switch_light switch_light.launch
 
 ## 赛事概述
 

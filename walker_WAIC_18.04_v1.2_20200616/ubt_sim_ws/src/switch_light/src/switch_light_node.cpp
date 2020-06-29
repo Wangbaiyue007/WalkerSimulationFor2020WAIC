@@ -23,10 +23,8 @@
 #include <string.h>
 
 #include <ubt_core_msgs/JointCommand.h>
-//gait srv msgs
-#include "walker_srvs/leg_motion_MetaFuncCtrl.h"
-//leg kinematic lib
-#include "kinematic/kinematics.h"
+//Forward & Inverse kinematics lib
+#include "walker_arm_kin.h"
 
 #include <sstream>
 
@@ -48,32 +46,41 @@ int main(int argc, char **argv) {
 
   ros::Rate loop_rate(1000);
 
+  std::string ModelPath = "/home/baiyue/walker_team/walker_WAIC_18.04_v1.2_20200616/ubt_sim_ws/src/example/config/walker.urdf";
+  //estimate joint angles
+  VectorXd JointValues(7);
+  JointValues << PI/5, -PI/5, -PI*0.6, -PI*0.5, PI/2, 0, 0;
+  //calculate forward kinematics to get an end orientation
+  Tree walker_tree;
+  kdl_parser::treeFromFile(ModelPath, walker_tree);
+  VectorXd fkresult(7);
+  forward_kinematics_left(JointValues, walker_tree, fkresult);
+  //set the goal position of the end point
+  VectorXd GoalPosition(3);
+  GoalPosition << 0.4, 0.4, 0.1;
+  //obtain orientation from forward kinmatics result
+  VectorXd GoalOrientation(4);
+  for(int i = 0; i < 4; i++)
+  {
+    GoalOrientation(i) = fkresult(i+3);
+  }
+  //calculate the actual joint angle
+  VectorXd result(7);
+  get_inverse_left(ModelPath, GoalPosition, GoalOrientation, result);
+
   double time = 0.0;
-  double LSPposition = PI/2;
-  int iteration = 300;
-  int count = 0;
-  double d_LSPposition = LSPposition/iteration;
-  double desired_LSPposition = 0;
   
   bool is_first = false;
   const size_t limb_joint_count = 7;
   while (ros::ok()) {
     time += 0.001;
-    count ++;
-
-    // control arm joints
+    // control arm joints (position)
     left_arm_data.mode = 5;
-    if(count <= 300)
+    
+    for(size_t ll = 0; ll < limb_joint_count; ll++)
     {
-      desired_LSPposition += d_LSPposition;
+      left_arm_data.command[ll] = result(ll);
     }
-    left_arm_data.command[0] = desired_LSPposition;
-    left_arm_data.command[1] = 0;
-    left_arm_data.command[2] = 0;
-    left_arm_data.command[3] = 0;
-    left_arm_data.command[4] = 0;
-    left_arm_data.command[5] = 0;
-    left_arm_data.command[6] = 0;
     test_pub.publish(left_arm_data);
 
     ros::spinOnce();
