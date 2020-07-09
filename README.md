@@ -30,7 +30,7 @@ Launch example:
 
 Before launching the program, change the **ModelPath** in *switch_light_node.cpp* to your urdf path.
 
-    $ roslaunch switch_light switch_light.launch
+    $ roslaunch motion_control switch_light.launch
 
 ## 赛事概述
 
