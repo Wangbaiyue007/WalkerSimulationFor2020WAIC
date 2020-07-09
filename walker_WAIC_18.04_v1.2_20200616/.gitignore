@@ -6,4 +6,5 @@
 /.vscode/*
 /package.json
 /webpack.config.json
-*.wbproj
+*.WAIC.wbproj
+*.zip

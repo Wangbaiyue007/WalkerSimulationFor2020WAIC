@@ -28,8 +28,6 @@
 
 #include <sstream>
 
-std::string leg_status;
-
 int main(int argc, char **argv) {
   ros::init(argc, argv, "switch_light_node", ros::init_options::AnonymousName);
 
