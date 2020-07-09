@@ -34,7 +34,16 @@ std::string leg_status;
 void subWalkerStatus(const std_msgs::String &msgs)
 {
     leg_status = msgs.data;
-    //std::cout << "status  " << leg_status << std::endl;
+}
+
+std::vector<double> torque(7);
+std::vector<double> position(7);
+std::vector<double> velocity(7);
+void subLimbStatus(const sensor_msgs::JointState &msgs)
+{
+    torque = msgs.effort;
+    position = msgs.position;
+    velocity = msgs.velocity;
 }
 
 int64_t step_num = 0;
@@ -42,14 +51,13 @@ int64_t step_num = 0;
 void subWalkerStepNum(const std_msgs::Int64 &msgs)
 {
     step_num = msgs.data;
-    //std::cout << "step_num  " << step_num << std::endl;
 }
 
 MatrixXd fetch();
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "push_cart_node", ros::init_options::AnonymousName);
+    ros::init(argc, argv, "open_fridge_node", ros::init_options::AnonymousName);
 
     ros::NodeHandle n;
 
@@ -78,29 +86,21 @@ int main(int argc, char **argv)
     walker_walking.request.cmd = "start";
 
     //pub arm joints' data
-    ros::Publisher arm_l_pub = n.advertise<ubt_core_msgs::JointCommand>(
-        "/walker/leftLimb/controller", 10);
     ros::Publisher arm_r_pub = n.advertise<ubt_core_msgs::JointCommand>(
         "/walker/rightLimb/controller", 10);
+    ros::Subscriber arm_r_sub =
+        n.subscribe("/walker/rightLimb/joint_states", 10, &subLimbStatus);
 
     //left arm data test
-    ubt_core_msgs::JointCommand left_arm_data;
-    left_arm_data.names.resize(7);
-    left_arm_data.command.resize(7);
     ubt_core_msgs::JointCommand right_arm_data;
     right_arm_data.names.resize(7);
     right_arm_data.command.resize(7);
 
     //pub finger joints' data
-    ros::Publisher finger_l_pub = n.advertise<ubt_core_msgs::JointCommand>(
-        "/walker/leftHand/controller", 10);
     ros::Publisher finger_r_pub = n.advertise<ubt_core_msgs::JointCommand>(
         "/walker/rightHand/controller", 10);
 
     //finger data test
-    ubt_core_msgs::JointCommand left_hand_data;
-    left_hand_data.names.resize(10);
-    left_hand_data.command.resize(10);
     ubt_core_msgs::JointCommand right_hand_data;
     right_hand_data.names.resize(10);
     right_hand_data.command.resize(10);
@@ -114,58 +114,110 @@ int main(int argc, char **argv)
     bool is_first = false;
     const size_t limb_joint_count = 7;
     const size_t hand_joint_count = 10;
+    VectorXd current_torque(7), current_position(7);
     while (ros::ok())
     {
         time += 0.001;
         // control arm joints (position)
-        left_arm_data.mode = 5;
+        right_arm_data.mode = 5;
         if (time > 1.2 && time < 1.7)
         {
             for (size_t ll = 0; ll < limb_joint_count; ll++)
             {
-                left_arm_data.command[ll] = result(0, ll);
                 right_arm_data.command[ll] = result(4, ll);
             }
         }
-        else if (time > 1.7)
+        else if (time > 1.7 && time < 2.0)
         {
             for (size_t ll = 0; ll < limb_joint_count; ll++)
             {
-                left_arm_data.command[ll] = result(1, ll);
                 right_arm_data.command[ll] = result(5, ll);
+                current_torque(ll) = torque[ll];
+                current_position(ll) = position[ll];
             }
-        } /*
-        else if (time < 0.9)
+        }
+        else if (time > 2.4)
         {
+            bool cntl = true;
             for (size_t ll = 0; ll < limb_joint_count; ll++)
             {
-                left_arm_data.command[ll] = result(2, ll);
-                right_arm_data.command[ll] = result(6, ll);
+                if (position[ll] - current_position(ll) > 0.5 || -position[ll] + current_position(ll) > 0.5)
+                    cntl = false;
             }
-        }*/
-        arm_l_pub.publish(left_arm_data);
+            if (cntl)
+            {
+                right_arm_data.mode = 7;
+                for (size_t ll = 0; ll < limb_joint_count; ll++)
+                {
+                    right_arm_data.command[ll] = current_torque(ll);
+                    /*
+                if (velocity[ll] > 0.02)
+                {
+                    if (torque[ll] > 0)
+                        right_arm_data.command[ll] = 0.8 * current_torque(ll);
+                    else
+                        right_arm_data.command[ll] = 1.2 * current_torque(ll);
+                }
+                if (velocity[ll] < -0.02)
+                {
+                    if (torque[ll] < 0)
+                        right_arm_data.command[ll] = 0.8 * current_torque(ll);
+                    else
+                        right_arm_data.command[ll] = 1.2 * current_torque(ll);
+                }*/
+                }
+            }
+            else
+            {
+                right_arm_data.mode = 6;
+                for (size_t ll = 0; ll < limb_joint_count; ll++)
+                {
+                    right_arm_data.command[ll] = -velocity[ll];
+                }
+            }
+        }
+        //arm_l_pub.publish(left_arm_data);
         arm_r_pub.publish(right_arm_data);
 
         // control hand joints (torque & position)
 
         if (time > 2)
         {
-            left_hand_data.mode = 7;
+            /*
             right_hand_data.mode = 7;
-            left_hand_data.command[0] = 0.32;
-            left_hand_data.command[1] = 0.0;
-            right_hand_data.command[0] = 0.32;
-            right_hand_data.command[1] = 0.0;
             for (size_t ll = 1; ll < 5; ll++)
             {
-                left_hand_data.command[ll * 2] = 0.06;
-                left_hand_data.command[ll * 2 + 1] = 0.012;
-                right_hand_data.command[ll * 2] = 0.06;
-                right_hand_data.command[ll * 2 + 1] = 0.012;
-            }
-            finger_l_pub.publish(left_hand_data);
+                right_hand_data.command[ll * 2] = 0.5;
+                right_hand_data.command[ll * 2 + 1] = 0.1;
+            }*/
+            
+            if (time < 2.3)
+            {
+                right_hand_data.mode = 5;
+                for (size_t ll = 1; ll < 5; ll++)
+                {
+                    right_hand_data.command[ll * 2] = 1;
+                    right_hand_data.command[ll * 2 + 1] = 0.5;
+                }
+            } /*
+            if (time > 2.3)
+            {
+                right_hand_data.command[0] = 0.3;
+                right_hand_data.command[1] = 0.05;
+            }*/
+
             finger_r_pub.publish(right_hand_data);
-        }
+        } /*
+        else
+        {
+            right_hand_data.mode = 5;
+            for (size_t ll = 0; ll < 5; ll++)
+            {
+                right_hand_data.command[ll * 2] = 1;
+                right_hand_data.command[ll * 2 + 1] = 0.5;
+            }
+            finger_r_pub.publish(right_hand_data);
+        }*/
 
         if (time > 2.2)
         {
@@ -183,10 +235,17 @@ int main(int argc, char **argv)
             // control walking velocity and direction
             if (leg_status == "dynamic")
             {
-                vel_ctrl.linear.x = 0.3;
-                //vel_ctrl.angular.z = 0.0;
-                if (step_num > 4)
-                    vel_ctrl.linear.x = 0.25;
+                if (step_num == 0)
+                {
+                    vel_ctrl.linear.x = -0.1;
+                    vel_ctrl.angular.z = 0.3;
+                }
+                else
+                {
+                    vel_ctrl.linear.x = -0.06;
+                    vel_ctrl.angular.z = 0.35;
+                }
+
                 walker_vel.publish(vel_ctrl);
             }
 
@@ -217,27 +276,14 @@ MatrixXd fetch()
     //path of the urdf
     std::string ModelPath = "/home/baiyue/walker_team/walker_WAIC_18.04_v1.2_20200616/ubt_sim_ws/src/example/config/walker.urdf";
     //estimate the first middle point
-    VectorXd l_midpoint1(7), r_midpoint1(7);
-    l_midpoint1 << 0.2 * PI, -0.2 * PI, -PI / 8, -0.26 * PI, 0, 0.1 * PI, 0.1 * PI;
-    r_midpoint1 << -0.2 * PI, -0.2 * PI, PI / 8, -0.26 * PI, 0, -0.1 * PI, 0.1 * PI;
+    VectorXd r_midpoint1(7);
+    r_midpoint1 << 0, -0.1, PI * 0.5, -0.7 * PI, -PI * 0.4, 0, -0.1;
     //calculate forward kinematics to get an end orientation
-    Tree walker_tree;
-    kdl_parser::treeFromFile(ModelPath, walker_tree);
-    VectorXd l_fkresult(7), r_fkresult(7);
-    forward_kinematics_left(l_midpoint1, walker_tree, l_fkresult);
-    cout << "mid 1 left: " << endl;
-    cout << l_fkresult << endl;
-    forward_kinematics_right(r_midpoint1, walker_tree, r_fkresult);
-    cout << "mid 1 right: " << endl;
-    cout << r_fkresult << endl;
 
-    VectorXd l_midpoint2(7), r_midpoint2(7);
-    l_midpoint2 << 0.24 * PI, -0.09 * PI, -PI / 8, -0.24 * PI, 0.2 * PI, 0.35, 0.2;
-    r_midpoint2 << -0.24 * PI, -0.09 * PI, PI / 8, -0.24 * PI, -0.2 * PI, -0.35, 0.2;
+    VectorXd r_midpoint2(7);
+    r_midpoint2 << 0, 0, PI * 0.5, -0.7 * PI, -PI * 0.4, 0.2, 0.2;
     for (int i = 0; i < 7; i++)
     {
-        result(0, i) = l_midpoint1(i);
-        result(1, i) = l_midpoint2(i);
         result(4, i) = r_midpoint1(i);
         result(5, i) = r_midpoint2(i);
     }
