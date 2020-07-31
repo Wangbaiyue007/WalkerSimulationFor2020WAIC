@@ -150,21 +150,6 @@ int main(int argc, char **argv)
                 for (size_t ll = 0; ll < limb_joint_count; ll++)
                 {
                     right_arm_data.command[ll] = current_torque(ll);
-                    /*
-                if (velocity[ll] > 0.02)
-                {
-                    if (torque[ll] > 0)
-                        right_arm_data.command[ll] = 0.8 * current_torque(ll);
-                    else
-                        right_arm_data.command[ll] = 1.2 * current_torque(ll);
-                }
-                if (velocity[ll] < -0.02)
-                {
-                    if (torque[ll] < 0)
-                        right_arm_data.command[ll] = 0.8 * current_torque(ll);
-                    else
-                        right_arm_data.command[ll] = 1.2 * current_torque(ll);
-                }*/
                 }
             }
             else
