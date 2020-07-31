@@ -26,11 +26,25 @@ Launch example:
 
     $ roslaunch example example.launch
 
-### Mission 1
+### Missions
 
 Before launching the program, change the **ModelPath** in *switch_light_node.cpp* to your urdf path.
 
+1.  
+
     $ roslaunch motion_control switch_light.launch
+
+2. 
+
+    $ roslaunch motion_control gras_pcup.launch
+
+3.  
+
+    $ roslaunch motion_control push_cart.launch
+
+4. 
+
+    $ roslaunch motion_control open_fridge.launch
 
 ## 赛事概述
 
